@@ -1,7 +1,3 @@
-以下是 README 文件的中文版本：
-
----
-
 # logseq-mmarked-extension
 
 [![License](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)

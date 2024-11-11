@@ -1,0 +1,33 @@
+{
+  "name": "logseq-plugin-mmarked",
+  "version": "1.0.0",
+  "description": "Markdown Renderer based on @mathcrowd/mmarked for Logseq",
+  "main": "src/index.html",
+  "scripts": {
+    "clean": "rm -rf dist",
+    "build": "rollup -c"
+  },
+  "peerDependencies": {
+    "@logseq/libs": "^0.0.15"
+  },
+  "devDependencies": {
+    "@rollup/plugin-babel": "^6.0.4",
+    "@rollup/plugin-commonjs": "^21.0.1",
+    "@rollup/plugin-node-resolve": "^13.1.3",
+    "@rollup/plugin-typescript": "^8.3.0",
+    "@types/crypto-js": "^4.2.2",
+    "@types/katex": "^0.16.7",
+    "crypto-js": "^4.2.0",
+    "rollup": "^2.70.0",
+    "rollup-plugin-css-only": "^3.1.0",
+    "rollup-plugin-peer-deps-external": "^2.2.4",
+    "rollup-plugin-terser": "^7.0.2",
+    "rollup-plugin-visualizer": "^5.12.0",
+    "typescript": "^4.5.4",
+    "uuid": "^11.0.2"
+  },
+  "logseq": {
+    "id": "logseq-plugin-mmarked",
+    "icon": "./icon.png"
+  }
+}

@@ -14,7 +14,7 @@ This project provides a Logseq plugin that renders Markdown blocks using the MMa
 
 ## Usage
 
-To insert a music notation block, type `/` and select `MMarked Block`. This will create a renderer block with a notation block below it. Enter ABC Notation into the notation block, and the rendered notation will display above.
+To insert a Markdown block, type `/` and select `MMarked Block`. This will create a renderer block with a notation block below it. Enter ABC Notation into the notation block, and the rendered notation will display above.
 
 ## About MMarked
 

@@ -6,7 +6,7 @@ stages:
 github_sync:
   stage: sync
   only: 
-    - main
+    - tags
   tags:
     - k8s-runner
   script:

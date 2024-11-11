@@ -45,7 +45,6 @@ jobs:
         run: |
           zip -r logseq-plugin.zip . \
           -x "node_modules/*" \
-          -x "src/*" \
           -x "tests/*" \
           -x ".git/*" \
           -x ".github/*" \
@@ -53,8 +52,6 @@ jobs:
           -x ".gitignore" \
           -x ".npmrc" \
           -x "package-lock.json" \
-          -x "README.md" \
-          -x "CHANGELOG.md"
 
       # Upload the plugin asset
       - name: Upload Plugin Asset

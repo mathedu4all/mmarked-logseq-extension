@@ -12,6 +12,10 @@ A Logseq plugin that renders Markdown using [@mathcrowd/mmarked](https://github.
 
 This project provides a Logseq plugin that renders Markdown blocks using the MMarked library, ideal for educational contexts that require advanced markdown capabilities.
 
+## Install
+
+![install](./install.png)
+
 ## Usage
 
 To insert a Markdown block, type `/` and select `MMarked Block`. This will create a renderer block with a notation block below it. Enter ABC Notation into the notation block, and the rendered notation will display above.

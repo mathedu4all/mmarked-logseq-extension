@@ -12,6 +12,10 @@
 
 此项目提供了一个 Logseq 插件，使用 MMarked 库渲染 Markdown 区块，特别适用于需要高级 Markdown 功能的教育场景。
 
+## 安装
+
+![安装](./install.png)
+
 ## 使用方法
 
 要插入 Markdown 区块，可以输入 `/` 并选择 `MMarked Block`，它会创建一个渲染区块，并在其下方生成一个记谱区块。在记谱区块中输入 ABC 记谱内容，渲染效果将显示在上方。

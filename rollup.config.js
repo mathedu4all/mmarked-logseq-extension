@@ -5,7 +5,7 @@ import { visualizer } from "rollup-plugin-visualizer";
 
 export default {
   input: "src/index.ts",
-  external: ["marked", "@logseq/libs"],
+  external: ["marked"],
   output: {
     name: "mmarked.ext",
     format: "iife",

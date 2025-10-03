@@ -351,6 +351,81 @@ const generateHash = async (content: string): Promise<string> => {
 };
 
 /**
+ * Resolves local image paths to Logseq-compatible paths
+ *
+ * This function processes all img tags in the HTML and converts relative paths
+ * to absolute paths that Logseq can resolve. It handles:
+ * - Relative paths (./image.png, ../assets/image.png)
+ * - Asset paths (assets/image.png)
+ * - Absolute local paths (/path/to/image.png)
+ * - Leaves HTTP/HTTPS URLs unchanged
+ *
+ * @param html - HTML string containing img tags
+ * @returns HTML with resolved image paths
+ */
+const resolveImagePaths = async (html: string): Promise<string> => {
+  try {
+    const doc = domParser.parseFromString(html, "text/html");
+    const images = doc.querySelectorAll("img");
+
+    if (images.length === 0) {
+      return html;
+    }
+
+    // Get current graph path from Logseq
+    const graphPath = await logseq.App.getCurrentGraph();
+    if (!graphPath?.path) {
+      log.debug("No graph path available, skipping image path resolution");
+      return html;
+    }
+
+    const basePath = graphPath.path;
+
+    images.forEach((img) => {
+      const src = img.getAttribute("src");
+      if (!src) return;
+
+      // Skip if already an HTTP/HTTPS URL
+      if (/^https?:\/\//i.test(src)) {
+        return;
+      }
+
+      // Skip data URLs
+      if (src.startsWith("data:")) {
+        return;
+      }
+
+      let resolvedPath: string;
+
+      // Handle different path formats
+      if (src.startsWith("/")) {
+        // Absolute path - use as is
+        resolvedPath = `file://${src}`;
+      } else if (src.startsWith("../assets/") || src.startsWith("assets/")) {
+        // Logseq assets path
+        const assetPath = src.replace(/^\.\.\//, "");
+        resolvedPath = `file://${basePath}/${assetPath}`;
+      } else if (src.startsWith("./")) {
+        // Relative path from current location
+        resolvedPath = `file://${basePath}/assets/${src.substring(2)}`;
+      } else {
+        // Assume it's in assets folder
+        resolvedPath = `file://${basePath}/assets/${src}`;
+      }
+
+      img.setAttribute("src", resolvedPath);
+      log.debug(`Resolved image path: ${src} -> ${resolvedPath}`);
+    });
+
+    return doc.body.innerHTML;
+  } catch (error) {
+    log.error("Image path resolution failed:", error);
+    // Return original HTML if resolution fails
+    return html;
+  }
+};
+
+/**
  * Main rendering function with caching and lazy loading
  *
  * Rendering pipeline:
@@ -359,8 +434,9 @@ const generateHash = async (content: string): Promise<string> => {
  * 3. Lazy load markdown library if not loaded
  * 4. Render markdown with MathJax support
  * 5. Clean up SVG elements
- * 6. Cache result (with size limit)
- * 7. Return rendered HTML
+ * 6. Resolve local image paths
+ * 7. Cache result (with size limit)
+ * 8. Return rendered HTML
  *
  * @param markdown - Markdown content to render
  * @returns Promise resolving to rendered HTML
@@ -404,6 +480,9 @@ const renderContent = async (markdown: string): Promise<string> => {
       result = rendered.parsed;
     }
 
+    // Resolve local image paths to Logseq-compatible paths
+    result = await resolveImagePaths(result);
+
     // Cache the result
     renderCache.set(cacheKey, result);
 
@@ -441,9 +520,8 @@ const handleThemeChange = async (): Promise<void> => {
       "ui/theme"
     );
 
-    const mathcrowdCss = theme === "dark"
-      ? MATHCROWD_CSS.dark
-      : MATHCROWD_CSS.light;
+    const mathcrowdCss =
+      theme === "dark" ? MATHCROWD_CSS.dark : MATHCROWD_CSS.light;
 
     logseq.provideStyle(`@import url("${mathcrowdCss}");`);
     log.debug("Theme changed:", theme);
@@ -503,7 +581,10 @@ const registerSlashCommand = async (): Promise<void> => {
  *
  * @param event - Render event from Logseq
  */
-const handleMacroRenderer = async ({ slot, payload }: RenderEvent): Promise<void> => {
+const handleMacroRenderer = async ({
+  slot,
+  payload,
+}: RenderEvent): Promise<void> => {
   const [type] = payload.arguments;
 
   // Only handle our renderer types

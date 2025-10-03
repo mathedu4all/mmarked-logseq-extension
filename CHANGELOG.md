@@ -1,3 +1,12 @@
+## [1.4.2](https://cloud.mathcrowd.cn/agile/frontend/mmarked-logseq-extension/compare/v1.4.1...v1.4.2) (2025-10-03)
+
+
+### Reverts
+
+* **ci:** use inline sync and drop script ([3fcc0c4](https://cloud.mathcrowd.cn/agile/frontend/mmarked-logseq-extension/commits/3fcc0c4697dd3158bb0fe9ed35b4ec65a75abf90))
+
+
+
 ## [1.4.1](https://cloud.mathcrowd.cn/agile/frontend/mmarked-logseq-extension/compare/v1.4.0...v1.4.1) (2025-10-03)
 
 

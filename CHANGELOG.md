@@ -1,3 +1,17 @@
+## [1.5.6](https://cloud.mathcrowd.cn/agile/frontend/mmarked-logseq-extension/compare/v1.5.5...v1.5.6) (2025-10-03)
+
+
+### Bug Fixes
+
+* use [@ts-expect-error](https://cloud.mathcrowd.cn/ts-expect-error) instead of [@ts-ignore](https://cloud.mathcrowd.cn/ts-ignore) ([545bea8](https://cloud.mathcrowd.cn/agile/frontend/mmarked-logseq-extension/commits/545bea856fc0cb97a5bdb794b578f187a53bcfb6))
+
+
+### Performance Improvements
+
+* implement lazy loading for mmarked library ([38b5de2](https://cloud.mathcrowd.cn/agile/frontend/mmarked-logseq-extension/commits/38b5de2fcd74dad9a9b9c3bb15cffc08da761a13))
+
+
+
 ## [1.5.5](https://cloud.mathcrowd.cn/agile/frontend/mmarked-logseq-extension/compare/v1.5.4...v1.5.5) (2025-10-03)
 
 

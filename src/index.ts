@@ -6,10 +6,22 @@
  */
 
 import { BlockEntity } from "@logseq/libs/dist/LSPlugin.user";
-import { renderMarkdown, tex2svg } from "@mathcrowd/mmarked";
 import { v4 as uuid } from "uuid";
 import "@logseq/libs";
 import CryptoJS from "crypto-js";
+
+// 动态加载 mmarked，避免阻塞插件启动
+let mmarkedModule: typeof import("@mathcrowd/mmarked") | null = null;
+const loadMmarked = async () => {
+  if (!mmarkedModule) {
+    // @ts-ignore - 运行时从全局变量加载
+    mmarkedModule = window.marked;
+    if (!mmarkedModule) {
+      throw new Error("mmarked library not loaded");
+    }
+  }
+  return mmarkedModule;
+};
 
 /* ============================================================================
  * 类型定义 (Type Definitions)
@@ -293,15 +305,16 @@ const cleanupMathJaxSvg = (html: string): string => {
  *
  * 渲染流程：
  * 1. 检查内容是否为空
- * 2. 使用 renderMarkdown 转换 Markdown
- * 3. 使用 tex2svg 处理数学公式
- * 4. 清理 MathJax SVG 容器
- * 5. 错误处理和降级方案
+ * 2. 动态加载 mmarked 库
+ * 3. 使用 renderMarkdown 转换 Markdown
+ * 4. 使用 tex2svg 处理数学公式
+ * 5. 清理 MathJax SVG 容器
+ * 6. 错误处理和降级方案
  *
  * @param markdown - 要渲染的 Markdown 内容
  * @returns 渲染后的 HTML 字符串
  */
-const renderContent = (markdown: string): string => {
+const renderContent = async (markdown: string): Promise<string> => {
   try {
     log.debug("Rendering markdown:", markdown);
 
@@ -309,6 +322,9 @@ const renderContent = (markdown: string): string => {
     if (!markdown.trim()) {
       return '<div class="empty-content">Empty content</div>';
     }
+
+    // 加载 mmarked 库
+    const { renderMarkdown, tex2svg } = await loadMmarked();
 
     // 尝试完整渲染（包含数学公式）
     try {
@@ -453,7 +469,7 @@ const handleMacroRenderer = async ({
     const markdown = extractMarkdownContent(dataBlock.content);
     log.debug("Extracted markdown:", markdown);
 
-    const html = renderContent(markdown);
+    const html = await renderContent(markdown);
     log.debug("Rendered HTML:", html);
 
     // 生成稳定的 UI key

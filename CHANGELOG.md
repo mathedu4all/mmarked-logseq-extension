@@ -1,3 +1,7 @@
+# [1.4.0](https://cloud.mathcrowd.cn/agile/frontend/mmarked-logseq-extension/compare/v1.3.2...v1.4.0) (2025-10-03)
+
+
+
 # Changelog
 
 All notable changes to this project will be documented in this file.

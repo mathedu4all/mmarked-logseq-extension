@@ -14,11 +14,20 @@ import CryptoJS from "crypto-js";
 let mmarkedModule: typeof import("@mathcrowd/mmarked") | null = null;
 const loadMmarked = async () => {
   if (!mmarkedModule) {
+    console.log("[MMarked] Waiting for mmarked library to load...");
+    // @ts-expect-error - 运行时从全局变量加载
+    await window.mmarkedLoaded;
+
     // @ts-expect-error - 运行时从全局变量加载
     mmarkedModule = window.marked;
     if (!mmarkedModule) {
+      console.error("[MMarked] Failed to load: window.marked is undefined");
       throw new Error("mmarked library not loaded");
     }
+    console.log(
+      "[MMarked] Library loaded successfully:",
+      Object.keys(mmarkedModule)
+    );
   }
   return mmarkedModule;
 };
@@ -524,7 +533,10 @@ const handleMacroRenderer = async ({
  */
 async function main(): Promise<void> {
   try {
+    console.log("[MMarked] Plugin initialization started...");
+
     // 提供所有静态样式
+    console.log("[MMarked] Providing styles...");
     logseq.provideStyle(`
       ${MATHJAX_STYLES}
       .${PLUGIN_NAME} {
@@ -535,18 +547,23 @@ async function main(): Promise<void> {
     `);
 
     // 初始化主题
+    console.log("[MMarked] Initializing theme...");
     await handleThemeChange();
 
     // 注册命令
+    console.log("[MMarked] Registering slash command...");
     await registerSlashCommand();
 
     // 注册事件处理器
+    console.log("[MMarked] Registering event handlers...");
     logseq.App.onMacroRendererSlotted(handleMacroRenderer);
     logseq.App.onThemeModeChanged(handleThemeChange);
 
     // 通知用户初始化成功
+    console.log("[MMarked] Plugin initialized successfully");
     logseq.UI.showMsg(`${PLUGIN_NAME} plugin initialized`);
   } catch (error) {
+    console.error("[MMarked] Initialization failed:", error);
     log.error("Plugin initialization failed:", error);
     const { message } = formatError(error);
     logseq.UI.showMsg(`Plugin initialization failed: ${message}`, "error");
@@ -561,6 +578,7 @@ async function main(): Promise<void> {
  * 插件启动入口
  * 等待 Logseq 准备就绪后执行主初始化函数
  */
+console.log("[MMarked] Waiting for Logseq to be ready...");
 logseq.ready(main).catch((error) => {
-  console.error("Plugin bootstrap failed:", formatError(error));
+  console.error("[MMarked] Bootstrap failed:", formatError(error));
 });

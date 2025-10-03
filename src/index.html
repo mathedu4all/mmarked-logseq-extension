@@ -10,7 +10,22 @@
 <body>
 <div id="app"></div>
 <script src="https://cdn.jsdelivr.net/npm/@logseq/libs"></script>
-<script defer src="../src/browser.umd.js"></script>
+<script>
+  // 异步加载 mmarked 库，不阻塞插件启动
+  window.mmarkedLoaded = new Promise((resolve) => {
+    const script = document.createElement('script');
+    script.src = '../src/browser.umd.js';
+    script.onload = () => {
+      console.log('[MMarked] browser.umd.js loaded');
+      resolve(true);
+    };
+    script.onerror = () => {
+      console.error('[MMarked] Failed to load browser.umd.js');
+      resolve(false);
+    };
+    document.head.appendChild(script);
+  });
+</script>
 <script src="../dist/index.js"></script>
 </body>
 </html>

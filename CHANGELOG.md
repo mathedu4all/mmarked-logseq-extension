@@ -1,3 +1,12 @@
+## [1.4.3](https://cloud.mathcrowd.cn/agile/frontend/mmarked-logseq-extension/compare/v1.4.2...v1.4.3) (2025-10-03)
+
+
+### Performance Improvements
+
+* implement lazy loading for markdown library to improve plugin startup time ([459607b](https://cloud.mathcrowd.cn/agile/frontend/mmarked-logseq-extension/commits/459607b93c2c3a4083d61f756924f87b90a416c0))
+
+
+
 ## [1.4.2](https://cloud.mathcrowd.cn/agile/frontend/mmarked-logseq-extension/compare/v1.4.1...v1.4.2) (2025-10-03)
 
 

@@ -2,11 +2,11 @@
   "name": "logseq-plugin-mmarked",
   "version": "1.5.8",
   "description": "Markdown Renderer based on @mathcrowd/mmarked for Logseq",
-  "main": "src/index.html",
+  "main": "dist/index.html",
   "type": "module",
   "scripts": {
     "clean": "rm -rf dist",
-    "build": "rollup -c",
+    "build": "rollup -c && cp src/index.html dist/index.html && cp src/browser.umd.js dist/browser.umd.js",
     "lint": "eslint src --ext .ts",
     "lint:fix": "eslint src --ext .ts --fix",
     "format": "prettier --write \"src/**/*.ts\"",

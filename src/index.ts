@@ -1,8 +1,53 @@
 import { BlockEntity } from "@logseq/libs/dist/LSPlugin.user";
-import { renderMarkdown, tex2svg } from "marked";
 import { v4 as uuid } from "uuid";
 import "@logseq/libs";
 import CryptoJS from "crypto-js";
+
+// Lazy loading for the marked library
+let markedLibraryLoaded = false;
+let markedLibraryLoading = false;
+const markedLibraryLoadCallbacks: Array<() => void> = [];
+
+declare global {
+  interface Window {
+    marked?: {
+      renderMarkdown: (text: string) => { parsed: string };
+      tex2svg: (text: string) => string;
+    };
+  }
+}
+
+const loadMarkedLibrary = (): Promise<void> => {
+  if (markedLibraryLoaded) {
+    return Promise.resolve();
+  }
+
+  if (markedLibraryLoading) {
+    return new Promise((resolve) => {
+      markedLibraryLoadCallbacks.push(resolve);
+    });
+  }
+
+  markedLibraryLoading = true;
+
+  return new Promise((resolve, reject) => {
+    const script = document.createElement("script");
+    script.src = "./browser.umd.js";
+    script.async = true;
+    script.onload = () => {
+      markedLibraryLoaded = true;
+      markedLibraryLoading = false;
+      resolve();
+      markedLibraryLoadCallbacks.forEach((cb) => cb());
+      markedLibraryLoadCallbacks.length = 0;
+    };
+    script.onerror = () => {
+      markedLibraryLoading = false;
+      reject(new Error("Failed to load markdown library"));
+    };
+    document.head.appendChild(script);
+  });
+};
 
 const generateMd5Hash = (content: string) => {
   return CryptoJS.MD5(content).toString(CryptoJS.enc.Hex);
@@ -183,7 +228,7 @@ const generateHash = async (content: string): Promise<string> => {
   }
 };
 
-const renderContent = (markdown: string): string => {
+const renderContent = async (markdown: string): Promise<string> => {
   try {
     log.debug("Rendering markdown:", markdown);
 
@@ -198,17 +243,24 @@ const renderContent = (markdown: string): string => {
       return renderCache.get(cacheKey)!;
     }
 
+    // Ensure library is loaded
+    await loadMarkedLibrary();
+
+    if (!window.marked) {
+      throw new Error("Markdown library not available");
+    }
+
     // First try rendering with tex2svg
     let result: string;
     try {
-      const rendered = renderMarkdown(markdown);
+      const rendered = window.marked.renderMarkdown(markdown);
       log.debug("Markdown rendered:", rendered);
-      const svgContent = tex2svg(rendered.parsed);
+      const svgContent = window.marked.tex2svg(rendered.parsed);
       result = cleanupMathJaxSvg(svgContent);
     } catch (error) {
       log.error("tex2svg rendering failed:", error);
       // Fallback to basic markdown rendering
-      const rendered = renderMarkdown(markdown);
+      const rendered = window.marked.renderMarkdown(markdown);
       result = rendered.parsed;
     }
 
@@ -285,7 +337,7 @@ const handleMacroRenderer = async ({ slot, payload }: RenderEvent) => {
     const markdown = extractMarkdownContent(dataBlock.content);
     log.debug("Extracted markdown:", markdown);
 
-    const html = renderContent(markdown);
+    const html = await renderContent(markdown);
 
     log.debug("Rendered HTML:", html);
 

@@ -6,25 +6,26 @@ import { visualizer } from "rollup-plugin-visualizer";
 
 export default {
   input: "src/index.ts",
-  external: ['marked'],
+  external: ["@logseq/libs", "@mathcrowd/mmarked"],
   output: {
-    name: 'mmarked.ext',
-    format: 'iife',
+    name: "mmarked.ext",
+    format: "iife",
     dir: "dist",
     entryFileNames: "index.js",
+    sourcemap: false,
     globals: {
-			marked: 'marked',
-		}
+      "@logseq/libs": "LSPluginEntry",
+      "@mathcrowd/mmarked": "marked",
+    },
   },
   plugins: [
     nodeResolve(),
     typescript({
       tsconfig: "./tsconfig.json",
-      sourceMap: false
+      sourceMap: false,
     }),
     commonjs(),
     terser(),
     visualizer(),
   ],
-  external: ["@logseq/libs", "marked"],
 };

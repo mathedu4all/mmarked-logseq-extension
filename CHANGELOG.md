@@ -1,3 +1,12 @@
+## [1.5.7](https://cloud.mathcrowd.cn/agile/frontend/mmarked-logseq-extension/compare/v1.5.6...v1.5.7) (2025-10-03)
+
+
+### Bug Fixes
+
+* implement async script loading with Promise-based coordination ([35c0dfd](https://cloud.mathcrowd.cn/agile/frontend/mmarked-logseq-extension/commits/35c0dfd05ec35233ce58cda96039769be34dc46c))
+
+
+
 ## [1.5.6](https://cloud.mathcrowd.cn/agile/frontend/mmarked-logseq-extension/compare/v1.5.5...v1.5.6) (2025-10-03)
 
 

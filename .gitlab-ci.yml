@@ -5,6 +5,8 @@ stages:
 
 github_sync:
   stage: sync
+  only:
+    - tags
   tags:
     - k8s-runner
   script:
@@ -25,7 +27,8 @@ github_sync:
     - git config --global https.proxy http://192.168.10.100:88
     - echo "Adding GitHub remote repository..."
     - git remote add github git@github.com:mathedu4all/mmarked-logseq-extension.git || true
-    - echo "Pushing to GitHub..."
-    - GIT_TRACE=1 GIT_CURL_VERBOSE=1 GIT_SSH_COMMAND='ssh -i ~/.ssh/github.key' git push -f github HEAD:main --tags
+    - echo "Fetching latest from origin and pushing to GitHub..."
+    - git fetch origin main:main
+    - GIT_TRACE=1 GIT_CURL_VERBOSE=1 GIT_SSH_COMMAND='ssh -i ~/.ssh/github.key' git push github main --tags
 
 

@@ -104,13 +104,19 @@ const formatError = (error: unknown): LogseqError => {
 
 // Debug logger
 const log = {
-  debug: (...args: any[]) => console.log("[MMarked Debug]", ...args),
+  debug: (...args: unknown[]) => console.log("[MMarked Debug]", ...args),
   error: (msg: string, error: unknown) =>
     console.error("[MMarked Error]", msg, formatError(error)),
 };
 
+// Reuse DOMParser instance for better performance
+const domParser = new DOMParser();
+
+// Cache for rendered content
+const renderCache = new Map<string, string>();
+
 const cleanupMathJaxSvg = (html: string): string => {
-  const parser = new DOMParser();
+  const parser = domParser;
   const doc = parser.parseFromString(html, "text/html");
   const containers = doc.querySelectorAll("mjx-container");
 
@@ -127,7 +133,7 @@ const cleanupMathJaxSvg = (html: string): string => {
       if (display === "true") {
         svg.style.display = "block";
         svg.style.margin = "1em auto";
-      }else{
+      } else {
         svg.style.display = "inline";
         svg.style.margin = "auto 0.25em";
       }
@@ -185,18 +191,39 @@ const renderContent = (markdown: string): string => {
       return '<div class="empty-content">Empty content</div>';
     }
 
+    // Check cache first
+    const cacheKey = generateMd5Hash(markdown);
+    if (renderCache.has(cacheKey)) {
+      log.debug("Cache hit for markdown");
+      return renderCache.get(cacheKey)!;
+    }
+
     // First try rendering with tex2svg
+    let result: string;
     try {
       const rendered = renderMarkdown(markdown);
       log.debug("Markdown rendered:", rendered);
       const svgContent = tex2svg(rendered.parsed);
-      return cleanupMathJaxSvg(svgContent);
+      result = cleanupMathJaxSvg(svgContent);
     } catch (error) {
       log.error("tex2svg rendering failed:", error);
       // Fallback to basic markdown rendering
       const rendered = renderMarkdown(markdown);
-      return rendered.parsed;
+      result = rendered.parsed;
     }
+
+    // Cache the result
+    renderCache.set(cacheKey, result);
+
+    // Limit cache size to prevent memory issues
+    if (renderCache.size > 100) {
+      const firstKey = renderCache.keys().next().value;
+      if (firstKey) {
+        renderCache.delete(firstKey);
+      }
+    }
+
+    return result;
   } catch (error) {
     log.error("Markdown rendering failed:", error);
     const { message } = formatError(error);
@@ -222,7 +249,7 @@ const registerSlashCommand = async () => {
       });
     } catch (error) {
       log.error("Slash command failed:", error);
-      logseq.App.showMsg("Failed to create MMarked block", "error");
+      logseq.UI.showMsg("Failed to create MMarked block", "error");
     }
   });
 };
@@ -259,12 +286,11 @@ const handleMacroRenderer = async ({ slot, payload }: RenderEvent) => {
     log.debug("Extracted markdown:", markdown);
 
     const html = renderContent(markdown);
-    const parser = new DOMParser();
 
     log.debug("Rendered HTML:", html);
 
     const hash = await generateHash(html);
-    const layout = parser.parseFromString(html, "text/html");
+    const layout = domParser.parseFromString(html, "text/html");
 
     // Provide UI with rendered content
     logseq.provideUI({
@@ -285,7 +311,7 @@ const handleMacroRenderer = async ({ slot, payload }: RenderEvent) => {
   } catch (error) {
     log.error("Macro renderer failed:", error);
     const { message } = formatError(error);
-    logseq.App.showMsg(`Rendering failed: ${message}`, "error");
+    logseq.UI.showMsg(`Rendering failed: ${message}`, "error");
 
     // Provide error UI
     logseq.provideUI({
@@ -321,11 +347,11 @@ async function main() {
     logseq.App.onMacroRendererSlotted(handleMacroRenderer);
     logseq.App.onThemeModeChanged(handleThemeChange);
 
-    logseq.App.showMsg(`${PLUGIN_NAME} plugin initialized`);
+    logseq.UI.showMsg(`${PLUGIN_NAME} plugin initialized`);
   } catch (error) {
     log.error("Plugin initialization failed:", error);
     const { message } = formatError(error);
-    logseq.App.showMsg(`Plugin initialization failed: ${message}`, "error");
+    logseq.UI.showMsg(`Plugin initialization failed: ${message}`, "error");
   }
 }
 

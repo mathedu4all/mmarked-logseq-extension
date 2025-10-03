@@ -45,6 +45,12 @@ Mathcrowd 是由经验丰富的开发者和教育工作者创办的创新型初�
 
 💬 [加入我们的 Discord](https://discord.gg/6VMUVA5Yq2)
 
+## 🛠️ 开发与贡献
+
+想要参与开发或贡献代码？请查看我们的开发指南：
+
+**[→ CONTRIBUTING.md](CONTRIBUTING.md)** - 完整的开发工作流程、代码规范和贡献指南
+
 ## 📞 支持
 
 如有关于此插件的问题或建议，请在我们的 GitHub 仓库中 [提交问题](https://github.com/mathedu4all/mmarked-logseq-extension/issues)。
@@ -53,4 +59,4 @@ Mathcrowd 是由经验丰富的开发者和教育工作者创办的创新型初�
 
 ---
 
-希望此翻译版本能符合您的需求！
+**注意**：此插件包含了 `@mathcrowd/mmarked` 的打包版本（位于 `src/browser.umd.js`），以确保与 Logseq 的兼容性。

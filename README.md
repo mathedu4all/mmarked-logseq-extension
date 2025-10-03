@@ -45,7 +45,24 @@ Mathcrowd is an innovative startup founded by experienced developers and educato
 
 💬 [Join Our Discord](https://discord.gg/6VMUVA5Yq2)
 
-## 📞 Support
+## 🛠️ Development & Contributing
+
+Interested in contributing or developing this plugin? See our development guide:
+
+**[→ CONTRIBUTING.md](CONTRIBUTING.md)** - Complete development workflow, coding standards, and contribution guidelines
+
+## � Marketplace Updates
+
+This plugin has already been accepted into the official Logseq Marketplace. New releases are picked up automatically when you publish a new tag (e.g. `v1.4.0`). No manual resubmission or separate manifest PR is required.
+
+Workflow summary:
+- Run `./scripts/release.sh <version>`
+- GitHub Actions builds & publishes a release
+- Marketplace auto-detects and updates the listing
+
+If an update doesn't appear after some time, verify the GitHub Release exists and the tag matches the `package.json` version.
+
+## �📞 Support
 
 For questions or issues with this extension, please [open an issue](https://github.com/mathedu4all/mmarked-logseq-extension/issues) on our GitHub repository.
 
@@ -53,4 +70,4 @@ For inquiries specific to the @mathcrowd/mmarked library, please [open an issue]
 
 ---
 
-This refined version provides a clear overview and improves the structure for readability.
+**Note**: This plugin includes a bundled version of `@mathcrowd/mmarked` in `src/browser.umd.js` for Logseq compatibility.

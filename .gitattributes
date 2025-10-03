@@ -1,0 +1,2 @@
+# Mark large bundled files as binary to avoid diff
+src/browser.umd.js binary -diff

@@ -10,5 +10,5 @@
       "lib": ["dom", "es2018"],
       "outDir": "dist"
     },
-    "include": ["src/**/*", "index.ts", "src/browser.umd.js"]
+    "include": ["src/**/*"]
   }

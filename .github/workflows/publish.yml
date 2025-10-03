@@ -13,20 +13,35 @@ jobs:
     steps:
       # Checkout the code
       - name: Checkout code
-        uses: actions/checkout@v2
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
 
       # Setup Node.js
       - name: Setup Node.js
-        uses: actions/setup-node@v3
+        uses: actions/setup-node@v4
         with:
-          node-version: '16'
+          node-version: '20'
           cache: 'npm'
 
-      # Build the plugin
-      - name: Build plugin
+      - name: Verify version matches tag
         run: |
-          npm ci  # More reliable than npm install for CI
+          PKG_VERSION=$(node -p "require('./package.json').version")
+          TAG_VERSION="${GITHUB_REF_NAME#v}"
+          echo "package.json version: $PKG_VERSION"
+          echo "tag version:        $TAG_VERSION" 
+          if [ "$PKG_VERSION" != "$TAG_VERSION" ]; then
+            echo "❌ Version mismatch: package.json=$PKG_VERSION tag=$TAG_VERSION" >&2
+            exit 1
+          fi
+          echo "✅ Version check passed"
+
+      # Build the plugin
+      - name: Install & Build
+        run: |
+          npm ci
           npm run build
+          ls -lah dist || true
 
       # Create a GitHub release
       - name: Create Release
@@ -43,15 +58,12 @@ jobs:
       # Create a zip file excluding development files
       - name: Create Release Zip
         run: |
-          zip -r logseq-plugin.zip . \
-          -x "node_modules/*" \
-          -x "tests/*" \
-          -x ".git/*" \
-          -x ".github/*" \
-          -x "*.log" \
-          -x ".gitignore" \
-          -x ".npmrc" \
-          -x "package-lock.json" \
+          RELEASE_NAME="logseq-plugin-${GITHUB_REF_NAME}.zip"
+          mkdir -p release
+          cp -R dist release/dist
+          cp package.json README.md LICENSE icon.png release/ 2>/dev/null || true
+          (cd release && zip -r "../$RELEASE_NAME" .)
+          ls -lh $RELEASE_NAME
 
       # Upload the plugin asset
       - name: Upload Plugin Asset
@@ -60,6 +72,6 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
           upload_url: ${{ steps.create_release.outputs.upload_url }}
-          asset_path: ./logseq-plugin.zip
+          asset_path: ./logseq-plugin-${{ github.ref_name }}.zip
           asset_name: logseq-plugin-${{ github.ref_name }}.zip
           asset_content_type: application/zip

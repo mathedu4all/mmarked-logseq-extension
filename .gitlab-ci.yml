@@ -34,5 +34,23 @@ github_sync:
     - echo "Adding GitHub remote repository..."
     - git remote add github git@github.com:mathedu4all/mmarked-logseq-extension.git
 
-    - echo "Pushing to GitHub..."
-    - GIT_TRACE=1 GIT_CURL_VERBOSE=1 GIT_SSH_COMMAND='ssh -i ~/.ssh/github.key' git push -f github HEAD:main --tags
+    - echo "Deriving tag name..."
+    - TAG_NAME=$(git describe --tags --exact-match || echo "")
+    - |
+      if [ -z "$TAG_NAME" ]; then
+        echo "❌ No exact tag found for this commit (should not happen with only: tags)." >&2
+        exit 1
+      fi
+    - echo "Tag detected: $TAG_NAME"
+    - echo "Checking package.json version alignment..."
+    - PKG_VERSION=$(grep '"version"' package.json | head -1 | sed -E 's/.*"version" *: *"([^"]+)".*/\1/')
+    - CLEAN_TAG=${TAG_NAME#v}
+    - |
+      if [ "$PKG_VERSION" != "$CLEAN_TAG" ]; then
+        echo "❌ Version mismatch: package.json=$PKG_VERSION tag=$CLEAN_TAG" >&2
+        exit 1
+      fi
+    - echo "✅ Version matches tag ($PKG_VERSION)"
+    - echo "Pushing main branch (no force) and tag $TAG_NAME to GitHub..."
+    - GIT_TRACE=1 GIT_CURL_VERBOSE=1 GIT_SSH_COMMAND='ssh -i ~/.ssh/github.key' git push github HEAD:main
+    - GIT_TRACE=1 GIT_CURL_VERBOSE=1 GIT_SSH_COMMAND='ssh -i ~/.ssh/github.key' git push github "$TAG_NAME"

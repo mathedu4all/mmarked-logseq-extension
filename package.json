@@ -1,6 +1,6 @@
 {
   "name": "logseq-plugin-mmarked",
-  "version": "1.5.4",
+  "version": "1.5.5",
   "description": "Markdown Renderer based on @mathcrowd/mmarked for Logseq",
   "main": "src/index.html",
   "type": "module",

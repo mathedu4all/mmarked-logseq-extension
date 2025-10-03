@@ -1,3 +1,7 @@
+## [1.5.5](https://cloud.mathcrowd.cn/agile/frontend/mmarked-logseq-extension/compare/v1.5.4...v1.5.5) (2025-10-03)
+
+
+
 ## [1.5.4](https://cloud.mathcrowd.cn/agile/frontend/mmarked-logseq-extension/compare/v1.5.3...v1.5.4) (2025-10-03)
 
 

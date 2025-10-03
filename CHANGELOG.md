@@ -1,3 +1,12 @@
+## [1.5.4](https://cloud.mathcrowd.cn/agile/frontend/mmarked-logseq-extension/compare/v1.5.3...v1.5.4) (2025-10-03)
+
+
+### Reverts
+
+* rollback to last working version ([83a97d9](https://cloud.mathcrowd.cn/agile/frontend/mmarked-logseq-extension/commits/83a97d9ba7d268e390974dff714036e8519445b8))
+
+
+
 ## [1.5.3](https://cloud.mathcrowd.cn/agile/frontend/mmarked-logseq-extension/compare/v1.5.2...v1.5.3) (2025-10-03)
 
 

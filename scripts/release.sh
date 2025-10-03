@@ -71,33 +71,35 @@ else
     sed -i "s/\"version\": \".*\"/\"version\": \"${VERSION}\"/" package.json
   fi
 fi
-if [[ "$OSTYPE" == "darwin"* ]]; then
-  # macOS
-  sed -i '' "s/\"version\": \".*\"/\"version\": \"${VERSION}\"/" package.json
+
+# Step 4: Generate / update changelog (strict)
+if npm run | grep -q "changelog"; then
+  echo -e "${GREEN}🧾 Generating changelog via 'npm run changelog' (strict)...${NC}"
+  npm run changelog || { echo -e "${RED}Changelog failed. Aborting release.${NC}"; exit 1; }
+  echo -e "${GREEN}✅ Changelog updated${NC}"
 else
-  # Linux
-  sed -i "s/\"version\": \".*\"/\"version\": \"${VERSION}\"/" package.json
+  echo -e "${YELLOW}No 'changelog' npm script detected, skipping changelog generation.${NC}"
 fi
 
-# Step 4: Run tests
+# Step 5: Run lint & build
 echo -e "${GREEN}🧪 Running lint and build...${NC}"
 npm run lint || { echo -e "${RED}Lint failed${NC}"; exit 1; }
 npm run build || { echo -e "${RED}Build failed${NC}"; exit 1; }
 
-# Step 5: Commit version bump
-if git diff --quiet package.json; then
-  echo -e "${YELLOW}No version change to commit (already ${VERSION}).${NC}"
+# Step 6: Commit version bump + changelog (if changed)
+if git diff --quiet package.json CHANGELOG.md; then
+  echo -e "${YELLOW}No version/changelog changes to commit.${NC}"
 else
-  echo -e "${GREEN}💾 Committing version bump...${NC}"
-  git add package.json
-  git commit -m "chore: bump version to ${VERSION}"
+  echo -e "${GREEN}💾 Committing version & changelog...${NC}"
+  git add package.json CHANGELOG.md
+  git commit -m "chore: release ${VERSION} (version + changelog)"
 fi
 
-# Step 6: Create and push tag
+# Step 7: Create and push tag
 echo -e "${GREEN}🏷️  Creating tag ${TAG}...${NC}"
 git tag -a "${TAG}" -m "Release ${VERSION}"
 
-# Step 7: Push changes
+# Step 8: Push changes
 echo -e "${GREEN}⬆️  Pushing to origin...${NC}"
 git push origin "${CURRENT_BRANCH}"
 git push origin "${TAG}"
@@ -106,5 +108,4 @@ echo -e "\n${GREEN}✅ Release process completed!${NC}\n"
 echo -e "Next steps:"
 echo -e "1. Check GitHub Actions: ${YELLOW}https://github.com/mathedu4all/mmarked-logseq-extension/actions${NC}"
 echo -e "2. Verify release: ${YELLOW}https://github.com/mathedu4all/mmarked-logseq-extension/releases/tag/${TAG}${NC}"
-echo -e "3. If first release, follow: ${YELLOW}MARKETPLACE_SUBMISSION.md${NC}"
-echo -e "4. For updates, marketplace will auto-detect the new version\n"
+echo -e "3. Marketplace auto-detects the new version (no manual resubmission needed)\n"

@@ -281,7 +281,10 @@ const processLocalImages = async (markdown: string): Promise<string> => {
       if (path.startsWith("../assets/")) {
         const assetPath = path.replace("../assets/", "");
         const fullPath = `${graphPath}/assets/${assetPath}`;
-        log.debug("Converting local image:", { original: path, full: fullPath });
+        log.debug("Converting local image:", {
+          original: path,
+          full: fullPath,
+        });
         return `![${alt}](file://${fullPath})`;
       }
 
@@ -472,6 +475,11 @@ const registerSlashCommand = async (): Promise<void> => {
         sibling: false,
         before: false,
       });
+
+      // 延迟后退出编辑模式，让用户可以点击代码块进入编辑
+      setTimeout(async () => {
+        await logseq.Editor.exitEditingMode();
+      }, 150);
     } catch (error) {
       log.error("Slash command failed:", error);
       logseq.UI.showMsg("Failed to create MMarked block", "error");

@@ -5,52 +5,34 @@ stages:
 
 github_sync:
   stage: sync
-  only: 
+  only:
     - tags
   tags:
     - k8s-runner
   script:
-
-    - |
-      sed -i 's/https:\/\/dl-cdn.alpinelinux.org/http:\/\/mirrors.homelab.mathcrowd.cn/' /etc/apk/repositories
-      apk add --no-cache -f openssh git
-
+    - sed -i 's/https:\/\/dl-cdn.alpinelinux.org/http:\/\/mirrors.homelab.mathcrowd.cn/' /etc/apk/repositories && apk add --no-cache -f openssh git
     - echo "Setting up SSH directory and permissions..."
     - mkdir -p ~/.ssh
     - chmod 700 ~/.ssh
-
     - echo "Adding GitHub and CI server SSH hosts to known_hosts..."
     - ssh-keyscan github.com > ~/.ssh/known_hosts
     - chmod 644 ~/.ssh/known_hosts
-
     - echo "Adding private keys to SSH..."
     - echo "$GITHUB_KEY" > ~/.ssh/github.key
     - chmod 400 ~/.ssh/github.key
-
     - echo "Setting HTTP and HTTPS proxy..."
     - git config --global http.proxy http://192.168.10.100:88
     - git config --global https.proxy http://192.168.10.100:88
-
     - echo "Adding GitHub remote repository..."
-    - git remote add github git@github.com:mathedu4all/mmarked-logseq-extension.git
-
+    - git remote add github git@github.com:mathedu4all/mmarked-logseq-extension.git || echo "Remote already exists"
     - echo "Deriving tag name..."
     - TAG_NAME=$(git describe --tags --exact-match || echo "")
-    - |
-      if [ -z "$TAG_NAME" ]; then
-        echo "❌ No exact tag found for this commit (should not happen with only: tags)." >&2
-        exit 1
-      fi
+    - if [ -z "$TAG_NAME" ]; then echo "❌ No exact tag found for this commit (should not happen with only: tags)." >&2; exit 1; fi
     - echo "Tag detected: $TAG_NAME"
     - echo "Checking package.json version alignment..."
-    - |
-      PKG_VERSION=$(grep '"version"' package.json | head -1 | sed -E 's/.*"version" *: *"([^"]+)".*/\1/')
+    - "PKG_VERSION=$(grep '\"version\"' package.json | head -1 | sed -E 's/.*\"version\" *: *\"([^\"]+)\".*/\\1/')"
     - CLEAN_TAG=${TAG_NAME#v}
-    - |
-      if [ "$PKG_VERSION" != "$CLEAN_TAG" ]; then
-        echo "❌ Version mismatch: package.json=$PKG_VERSION tag=$CLEAN_TAG" >&2
-        exit 1
-      fi
+    - if [ "$PKG_VERSION" != "$CLEAN_TAG" ]; then echo "❌ Version mismatch: package.json=$PKG_VERSION tag=$CLEAN_TAG" >&2; exit 1; fi
     - echo "✅ Version matches tag ($PKG_VERSION)"
     - echo "Pushing main branch (no force) and tag $TAG_NAME to GitHub..."
     - GIT_TRACE=1 GIT_CURL_VERBOSE=1 GIT_SSH_COMMAND='ssh -i ~/.ssh/github.key' git push github HEAD:main

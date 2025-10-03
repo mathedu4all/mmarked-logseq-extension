@@ -14,7 +14,7 @@ import CryptoJS from "crypto-js";
 let mmarkedModule: typeof import("@mathcrowd/mmarked") | null = null;
 const loadMmarked = async () => {
   if (!mmarkedModule) {
-    // @ts-ignore - 运行时从全局变量加载
+    // @ts-expect-error - 运行时从全局变量加载
     mmarkedModule = window.marked;
     if (!mmarkedModule) {
       throw new Error("mmarked library not loaded");

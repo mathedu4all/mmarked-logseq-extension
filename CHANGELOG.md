@@ -1,3 +1,12 @@
+# [1.5.0](https://cloud.mathcrowd.cn/agile/frontend/mmarked-logseq-extension/compare/v1.4.3...v1.5.0) (2025-10-03)
+
+
+### Features
+
+* **render:** resolve local image paths during markdown rendering ([9e20d86](https://cloud.mathcrowd.cn/agile/frontend/mmarked-logseq-extension/commits/9e20d8697ace4af87a918bf0939c0e1395563a1e))
+
+
+
 ## [1.4.3](https://cloud.mathcrowd.cn/agile/frontend/mmarked-logseq-extension/compare/v1.4.2...v1.4.3) (2025-10-03)
 
 

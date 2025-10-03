@@ -672,14 +672,12 @@ const handleMacroRenderer = async ({
  *
  * Initialization steps:
  * 1. Provide static CSS styles (MathJax + plugin styles)
- * 2. Load theme-specific CSS
- * 3. Register slash command
- * 4. Register event handlers
- * 5. Show success message
+ * 2. Register event handlers (synchronous, lightweight)
+ * 3. Load theme and register commands asynchronously (non-blocking)
  */
 async function main(): Promise<void> {
   try {
-    // Provide all static styles at once
+    // Step 1: Provide all static styles at once (synchronous, fast)
     logseq.provideStyle(`
       ${MATHJAX_STYLES}
       .${PLUGIN_NAME} {
@@ -689,18 +687,19 @@ async function main(): Promise<void> {
       }
     `);
 
-    // Initialize theme
-    await handleThemeChange();
-
-    // Register commands
-    await registerSlashCommand();
-
-    // Register event handlers
+    // Step 2: Register event handlers immediately (synchronous, fast)
     logseq.App.onMacroRendererSlotted(handleMacroRenderer);
     logseq.App.onThemeModeChanged(handleThemeChange);
 
-    // Notify user of successful initialization
-    logseq.UI.showMsg(`${PLUGIN_NAME} plugin initialized`);
+    // Step 3: Initialize theme and register commands in parallel (non-blocking)
+    // These run asynchronously and won't block plugin ready signal
+    Promise.all([handleThemeChange(), registerSlashCommand()]).catch(
+      (error) => {
+        log.error("Async initialization failed:", error);
+      }
+    );
+
+    // Plugin is now ready - no blocking UI message
   } catch (error) {
     log.error("Plugin initialization failed:", error);
     const { message } = formatError(error);

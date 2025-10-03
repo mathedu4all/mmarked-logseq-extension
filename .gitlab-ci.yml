@@ -43,7 +43,8 @@ github_sync:
       fi
     - echo "Tag detected: $TAG_NAME"
     - echo "Checking package.json version alignment..."
-    - PKG_VERSION=$(grep '"version"' package.json | head -1 | sed -E 's/.*"version" *: *"([^"]+)".*/\1/')
+    - |
+      PKG_VERSION=$(grep '"version"' package.json | head -1 | sed -E 's/.*"version" *: *"([^"]+)".*/\1/')
     - CLEAN_TAG=${TAG_NAME#v}
     - |
       if [ "$PKG_VERSION" != "$CLEAN_TAG" ]; then

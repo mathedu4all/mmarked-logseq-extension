@@ -1,3 +1,12 @@
+## [1.4.1](https://cloud.mathcrowd.cn/agile/frontend/mmarked-logseq-extension/compare/v1.4.0...v1.4.1) (2025-10-03)
+
+
+### Bug Fixes
+
+* **ci:** resolve YAML alias parsing error in .gitlab-ci.yml ([941f6a5](https://cloud.mathcrowd.cn/agile/frontend/mmarked-logseq-extension/commits/941f6a59e56d878bb447997a1f50ee82ab23a043))
+
+
+
 # [1.4.0](https://cloud.mathcrowd.cn/agile/frontend/mmarked-logseq-extension/compare/v1.3.2...v1.4.0) (2025-10-03)
 
 

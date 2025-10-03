@@ -3,6 +3,15 @@
 
 ### Performance Improvements
 
+* **init:** optimize plugin startup to prevent load timeout ([f2c1a3a](https://cloud.mathcrowd.cn/agile/frontend/mmarked-logseq-extension/commits/f2c1a3aaf80ecb62f63e28a60d6f2ac57138076c))
+
+
+
+## [1.5.2](https://cloud.mathcrowd.cn/agile/frontend/mmarked-logseq-extension/compare/v1.5.1...v1.5.2) (2025-10-03)
+
+
+### Performance Improvements
+
 * **init:** optimize plugin startup to prevent load timeout ([1c81f69](https://cloud.mathcrowd.cn/agile/frontend/mmarked-logseq-extension/commits/1c81f699b0c1c117ef1e5c7f14f670c570ddf8ec))
 
 

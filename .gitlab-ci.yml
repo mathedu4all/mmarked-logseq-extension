@@ -5,12 +5,27 @@ stages:
 
 github_sync:
   stage: sync
-  only:
-    - tags
   tags:
     - k8s-runner
   script:
-    - sed -i 's/https:\/\/dl-cdn.alpinelinux.org/http:\/\/mirrors.homelab.mathcrowd.cn/' /etc/apk/repositories
-    - apk add --no-cache -f openssh git
-    - export GIT_TRACE=1 GIT_CURL_VERBOSE=1
-    - sh ./scripts/github_sync.sh
+    - |
+      sed -i 's/https:\/\/dl-cdn.alpinelinux.org/http:\/\/mirrors.homelab.mathcrowd.cn/' /etc/apk/repositories
+      apk add --no-cache -f openssh git
+    - echo "Setting up SSH directory and permissions..."
+    - mkdir -p ~/.ssh
+    - chmod 700 ~/.ssh
+    - echo "Adding GitHub and CI server SSH hosts to known_hosts..."
+    - ssh-keyscan github.com > ~/.ssh/known_hosts
+    - chmod 644 ~/.ssh/known_hosts
+    - echo "Adding private keys to SSH..."
+    - echo "$GITHUB_KEY" > ~/.ssh/github.key
+    - chmod 400 ~/.ssh/github.key
+    - echo "Setting HTTP and HTTPS proxy..."
+    - git config --global http.proxy http://192.168.10.100:88
+    - git config --global https.proxy http://192.168.10.100:88
+    - echo "Adding GitHub remote repository..."
+    - git remote add github git@github.com:mathedu4all/mmarked-logseq-extension.git || true
+    - echo "Pushing to GitHub..."
+    - GIT_TRACE=1 GIT_CURL_VERBOSE=1 GIT_SSH_COMMAND='ssh -i ~/.ssh/github.key' git push -f github HEAD:main --tags
+
+

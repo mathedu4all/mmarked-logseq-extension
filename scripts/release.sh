@@ -86,13 +86,45 @@ echo -e "${GREEN}🧪 Running lint and build...${NC}"
 npm run lint || { echo -e "${RED}Lint failed${NC}"; exit 1; }
 npm run build || { echo -e "${RED}Build failed${NC}"; exit 1; }
 
-# Step 6: Commit version bump + changelog (if changed)
-if git diff --quiet package.json CHANGELOG.md; then
-  echo -e "${YELLOW}No version/changelog changes to commit.${NC}"
+# Step 5.1: Sync upstream mmarked browser bundle if changed
+UPSTREAM_URL="https://raw.githubusercontent.com/mathedu4all/mmarked/main/dist/browser.umd.js"
+LOCAL_FILE="src/browser.umd.js"
+echo -e "${GREEN}🔄 Checking upstream browser.umd.js...${NC}"
+TMP_FILE=$(mktemp)
+if curl -fsSL -o "$TMP_FILE" "$UPSTREAM_URL"; then
+  if [ -f "$LOCAL_FILE" ]; then
+    LOCAL_HASH=$(shasum -a 256 "$LOCAL_FILE" | awk '{print $1}')
+    REMOTE_HASH=$(shasum -a 256 "$TMP_FILE" | awk '{print $1}')
+    if [ "$LOCAL_HASH" != "$REMOTE_HASH" ]; then
+      echo -e "${YELLOW}Upstream bundle changed. Updating local copy.${NC}"
+      mv "$TMP_FILE" "$LOCAL_FILE"
+      BROWSER_UPDATED=1
+    else
+      echo -e "${GREEN}Local bundle already up-to-date.${NC}"
+      rm "$TMP_FILE"
+    fi
+  else
+    echo -e "${YELLOW}Local bundle missing. Fetching new copy.${NC}"
+    mv "$TMP_FILE" "$LOCAL_FILE"
+    BROWSER_UPDATED=1
+  fi
 else
-  echo -e "${GREEN}💾 Committing version & changelog...${NC}"
-  git add package.json CHANGELOG.md
-  git commit -m "chore: release ${VERSION} (version + changelog)"
+  echo -e "${RED}Failed to fetch upstream browser.umd.js (network or URL issue). Continuing without update.${NC}"
+  rm -f "$TMP_FILE" 2>/dev/null || true
+fi
+
+# Step 6: Commit version bump + changelog + upstream bundle (if changed)
+if git diff --quiet package.json CHANGELOG.md "$LOCAL_FILE"; then
+  echo -e "${YELLOW}No version/changelog/bundle changes to commit.${NC}"
+else
+  echo -e "${GREEN}💾 Committing release artifacts...${NC}"
+  git add package.json CHANGELOG.md "$LOCAL_FILE"
+  COMMIT_MSG="chore: release ${VERSION} (version + changelog"
+  if [ "$BROWSER_UPDATED" = "1" ]; then
+    COMMIT_MSG+=" + mmarked bundle"
+  fi
+  COMMIT_MSG+=")"
+  git commit -m "$COMMIT_MSG"
 fi
 
 # Step 7: Create and push tag

@@ -3,12 +3,10 @@
  *
  * 基于 @mathcrowd/mmarked 的 Markdown 渲染插件，支持 MathJax 数学公式渲染
  *
- * @author MathCrowd
- * @version 1.5.3
  */
 
 import { BlockEntity } from "@logseq/libs/dist/LSPlugin.user";
-import { renderMarkdown, tex2svg } from "marked";
+import { renderMarkdown, tex2svg } from "@mathcrowd/mmarked";
 import { v4 as uuid } from "uuid";
 import "@logseq/libs";
 import CryptoJS from "crypto-js";

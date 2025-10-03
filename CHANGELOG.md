@@ -1,3 +1,12 @@
+## [1.5.9](https://cloud.mathcrowd.cn/agile/frontend/mmarked-logseq-extension/compare/v1.5.8...v1.5.9) (2025-10-03)
+
+
+### Bug Fixes
+
+* change entry point from src to dist directory ([3c748ac](https://cloud.mathcrowd.cn/agile/frontend/mmarked-logseq-extension/commits/3c748ac23734fdafff026d79cee9da33ad74bd1c))
+
+
+
 ## [1.5.8](https://cloud.mathcrowd.cn/agile/frontend/mmarked-logseq-extension/compare/v1.5.7...v1.5.8) (2025-10-03)
 
 

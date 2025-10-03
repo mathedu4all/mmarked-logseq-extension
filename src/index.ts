@@ -250,6 +250,58 @@ const extractMarkdownContent = (content: string): string => {
   return extracted;
 };
 
+/**
+ * 转换本地图片路径为 Logseq 资源 URL
+ *
+ * @param markdown - Markdown 内容
+ * @returns 转换后的 Markdown 内容
+ */
+const processLocalImages = async (markdown: string): Promise<string> => {
+  try {
+    // 获取当前图谱的路径
+    const currentGraph = await logseq.App.getCurrentGraph();
+    if (!currentGraph?.path) {
+      log.debug("No graph path found, skipping image processing");
+      return markdown;
+    }
+
+    const graphPath = currentGraph.path;
+    log.debug("Graph path:", graphPath);
+
+    // 匹配 Markdown 图片语法: ![alt](path)
+    const imageRegex = /!\[([^\]]*)\]\(([^)]+)\)/g;
+
+    const processed = markdown.replace(imageRegex, (match, alt, path) => {
+      // 跳过在线图片（http/https）
+      if (/^https?:\/\//i.test(path)) {
+        return match;
+      }
+
+      // 处理相对路径（../assets/...）
+      if (path.startsWith("../assets/")) {
+        const assetPath = path.replace("../assets/", "");
+        const fullPath = `${graphPath}/assets/${assetPath}`;
+        log.debug("Converting local image:", { original: path, full: fullPath });
+        return `![${alt}](file://${fullPath})`;
+      }
+
+      // 处理绝对路径
+      if (path.startsWith("/")) {
+        log.debug("Converting absolute path:", path);
+        return `![${alt}](file://${path})`;
+      }
+
+      // 其他情况保持原样
+      return match;
+    });
+
+    return processed;
+  } catch (error) {
+    log.error("Image processing failed:", error);
+    return markdown;
+  }
+};
+
 /* ============================================================================
  * MathJax SVG 处理 (MathJax Processing)
  * ========================================================================= */
@@ -314,11 +366,12 @@ const cleanupMathJaxSvg = (html: string): string => {
  *
  * 渲染流程：
  * 1. 检查内容是否为空
- * 2. 动态加载 mmarked 库
- * 3. 使用 renderMarkdown 转换 Markdown
- * 4. 使用 tex2svg 处理数学公式
- * 5. 清理 MathJax SVG 容器
- * 6. 错误处理和降级方案
+ * 2. 处理本地图片路径
+ * 3. 动态加载 mmarked 库
+ * 4. 使用 renderMarkdown 转换 Markdown
+ * 5. 使用 tex2svg 处理数学公式
+ * 6. 清理 MathJax SVG 容器
+ * 7. 错误处理和降级方案
  *
  * @param markdown - 要渲染的 Markdown 内容
  * @returns 渲染后的 HTML 字符串
@@ -332,12 +385,16 @@ const renderContent = async (markdown: string): Promise<string> => {
       return '<div class="empty-content">Empty content</div>';
     }
 
+    // 处理本地图片路径
+    const processedMarkdown = await processLocalImages(markdown);
+    log.debug("Processed markdown:", processedMarkdown);
+
     // 加载 mmarked 库
     const { renderMarkdown, tex2svg } = await loadMmarked();
 
     // 尝试完整渲染（包含数学公式）
     try {
-      const rendered = renderMarkdown(markdown);
+      const rendered = renderMarkdown(processedMarkdown);
       log.debug("Markdown rendered:", rendered);
 
       const svgContent = tex2svg(rendered.parsed);
@@ -346,7 +403,7 @@ const renderContent = async (markdown: string): Promise<string> => {
       log.error("tex2svg rendering failed:", error);
 
       // 降级方案：仅渲染基础 Markdown（不含数学公式）
-      const rendered = renderMarkdown(markdown);
+      const rendered = renderMarkdown(processedMarkdown);
       return rendered.parsed;
     }
   } catch (error) {

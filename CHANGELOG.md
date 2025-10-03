@@ -1,3 +1,12 @@
+## [1.5.3](https://cloud.mathcrowd.cn/agile/frontend/mmarked-logseq-extension/compare/v1.5.2...v1.5.3) (2025-10-03)
+
+
+### Bug Fixes
+
+* **build:** bundle @logseq/libs to eliminate CDN network delay ([1c64c62](https://cloud.mathcrowd.cn/agile/frontend/mmarked-logseq-extension/commits/1c64c62d3a4f900be32619c3cfded0e96e563f83))
+
+
+
 ## [1.5.2](https://cloud.mathcrowd.cn/agile/frontend/mmarked-logseq-extension/compare/v1.5.1...v1.5.2) (2025-10-03)
 
 

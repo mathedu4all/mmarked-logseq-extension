@@ -14,7 +14,7 @@
   // 异步加载 mmarked 库，不阻塞插件启动
   window.mmarkedLoaded = new Promise((resolve) => {
     const script = document.createElement('script');
-    script.src = '../src/browser.umd.js';
+    script.src = './browser.umd.js';
     script.onload = () => {
       console.log('[MMarked] browser.umd.js loaded');
       resolve(true);

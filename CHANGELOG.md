@@ -1,3 +1,17 @@
+# [1.6.0](https://cloud.mathcrowd.cn/agile/frontend/mmarked-logseq-extension/compare/v1.5.9...v1.6.0) (2025-10-03)
+
+
+### Bug Fixes
+
+* add local image path processing for proper rendering ([fb639f0](https://cloud.mathcrowd.cn/agile/frontend/mmarked-logseq-extension/commits/fb639f0ba2fc957663a09b2933123c3123e7852f))
+
+
+### Features
+
+* auto exit edit mode after inserting block ([c1b2bcc](https://cloud.mathcrowd.cn/agile/frontend/mmarked-logseq-extension/commits/c1b2bcca10d44cfa14547d73baf267da41cfde5f))
+
+
+
 ## [1.5.9](https://cloud.mathcrowd.cn/agile/frontend/mmarked-logseq-extension/compare/v1.5.8...v1.5.9) (2025-10-03)
 
 

@@ -1,72 +1,74 @@
 /**
  * MMarked Plugin for Logseq
  *
- * This plugin provides enhanced markdown rendering with MathJax support
- * using the @mathcrowd/mmarked library. It uses lazy loading to prevent
- * blocking Logseq's startup process.
+ * 基于 @mathcrowd/mmarked 的 Markdown 渲染插件，支持 MathJax 数学公式渲染
+ *
+ * @author MathCrowd
+ * @version 1.5.3
  */
 
 import { BlockEntity } from "@logseq/libs/dist/LSPlugin.user";
+import { renderMarkdown, tex2svg } from "marked";
 import { v4 as uuid } from "uuid";
 import "@logseq/libs";
 import CryptoJS from "crypto-js";
 
 /* ============================================================================
- * Type Definitions
+ * 类型定义 (Type Definitions)
  * ========================================================================= */
 
 /**
- * Event structure for macro renderer callbacks
+ * 渲染事件接口
+ * Logseq 宏渲染器回调时传递的事件对象
  */
 interface RenderEvent {
+  /** UI 插槽 ID */
   slot: string;
+  /** 事件负载 */
   payload: {
+    /** 渲染器参数列表 */
     arguments: string[];
+    /** 块的 UUID */
     uuid: string;
   };
 }
 
 /**
- * Structured error type for better error handling
+ * 错误对象类型
+ * 用于统一的错误处理
  */
 type LogseqError = {
+  /** 错误消息 */
   message: string;
+  /** 错误堆栈（可选） */
   stack?: string;
 };
 
-/**
- * Global type extensions for the marked library
- */
-declare global {
-  interface Window {
-    marked?: {
-      renderMarkdown: (text: string) => { parsed: string };
-      tex2svg: (text: string) => string;
-    };
-  }
-}
-
 /* ============================================================================
- * Constants
+ * 常量定义 (Constants)
  * ========================================================================= */
 
+/** 插件名称 */
 const PLUGIN_NAME = "mmarked";
+
+/** 斜杠命令名称 */
 const COMMAND_NAME = "MMarked Block";
+
+/** 代码块模板 */
 const BLOCK_TEMPLATE = `#+BEGIN_SRC ${PLUGIN_NAME}\n\n#+END_SRC`;
+
+/** 渲染器前缀 */
 const RENDERER_PREFIX = `:${PLUGIN_NAME}-preview_`;
 
-/** Maximum number of cached rendered results to prevent memory issues */
-const MAX_CACHE_SIZE = 100;
-
-/** CSS for mathcrowd themes */
+/** MathCrowd 主题 CSS 链接 */
 const MATHCROWD_CSS = {
   light: "https://cdn2.mathcrowd.cn/assets/styles/mathcrowd.css",
   dark: "https://cdn2.mathcrowd.cn/assets/styles/mathcrowd-dark.css",
 } as const;
 
 /**
- * MathJax SVG styling constants
- * These styles ensure proper rendering of mathematical formulas
+ * MathJax SVG 样式
+ * 确保数学公式的正确渲染和显示
  */
 const MATHJAX_STYLES = `
 .${PLUGIN_NAME}-math svg {
@@ -110,89 +112,25 @@ const MATHJAX_STYLES = `
 }`;
 
 /* ============================================================================
- * Lazy Loading Module
+ * 工具函数 (Utility Functions)
  * ========================================================================= */
 
 /**
- * State management for lazy loading the markdown library
- * The library is ~2.7MB and should only load when needed
- */
-let markedLibraryLoaded = false;
-let markedLibraryLoading = false;
-const markedLibraryLoadCallbacks: Array<() => void> = [];
-
-/**
- * Dynamically loads the markdown library on demand
+ * 生成 MD5 哈希
  *
- * This function implements a singleton pattern with promise caching:
- * - If already loaded: returns immediately
- * - If loading in progress: queues callback to resolve when complete
- * - Otherwise: starts loading and manages callbacks
- *
- * @returns Promise that resolves when library is loaded
- * @throws Error if script fails to load
- */
-const loadMarkedLibrary = (): Promise<void> => {
-  // Already loaded - return immediately
-  if (markedLibraryLoaded) {
-    return Promise.resolve();
-  }
-
-  // Currently loading - queue this request
-  if (markedLibraryLoading) {
-    return new Promise((resolve) => {
-      markedLibraryLoadCallbacks.push(resolve);
-    });
-  }
-
-  // Start loading process
-  markedLibraryLoading = true;
-
-  return new Promise((resolve, reject) => {
-    const script = document.createElement("script");
-    script.src = "./browser.umd.js";
-    script.async = true;
-
-    script.onload = () => {
-      markedLibraryLoaded = true;
-      markedLibraryLoading = false;
-
-      // Resolve this promise
-      resolve();
-
-      // Resolve all queued promises
-      markedLibraryLoadCallbacks.forEach((cb) => cb());
-      markedLibraryLoadCallbacks.length = 0;
-    };
-
-    script.onerror = () => {
-      markedLibraryLoading = false;
-      reject(new Error("Failed to load markdown library"));
-    };
-
-    document.head.appendChild(script);
-  });
-};
-
-/* ============================================================================
- * Utility Functions
- * ========================================================================= */
-
-/**
- * Generates MD5 hash for content caching
- *
- * @param content - Content to hash
- * @returns MD5 hash in hexadecimal format
+ * @param content - 要哈希的内容
+ * @returns 十六进制格式的 MD5 哈希值
  */
 const generateMd5Hash = (content: string): string => {
   return CryptoJS.MD5(content).toString(CryptoJS.enc.Hex);
 };
 
 /**
- * Formats errors into a consistent structure
+ * 格式化错误对象
+ * 统一处理各种类型的错误
  *
- * @param error - Error object (any type)
- * @returns Structured error with message and optional stack
+ * @param error - 任意类型的错误对象
+ * @returns 标准化的错误对象
  */
 const formatError = (error: unknown): LogseqError => {
   if (error instanceof Error) {
@@ -207,31 +145,51 @@ const formatError = (error: unknown): LogseqError => {
 };
 
 /**
- * Creates a unique renderer template string
+ * 创建渲染器模板字符串
  *
- * @param uuid - Unique identifier for the renderer
- * @returns Renderer template string for Logseq
+ * @param uuid - 唯一标识符
+ * @returns Logseq 渲染器模板字符串
  */
 const createRendererTemplate = (uuid: string): string =>
   `{{renderer ${RENDERER_PREFIX}${uuid}}}\n`;
 
+/**
+ * 生成内容哈希
+ * 用于生成稳定的 UI key，支持缓存
+ *
+ * @param content - 要哈希的内容
+ * @returns MD5 哈希值或 UUID（失败时的备用方案）
+ */
+const generateHash = async (content: string): Promise<string> => {
+  try {
+    return generateMd5Hash(content);
+  } catch (error) {
+    log.error("Hash generation failed:", error);
+    return uuid(); // 哈希失败时使用 UUID 作为后备
+  }
+};
+
 /* ============================================================================
- * Logging
+ * 日志工具 (Logging Utilities)
  * ========================================================================= */
 
 /**
- * Centralized logging utility with consistent formatting
+ * 统一的日志工具
+ * 提供调试和错误日志功能
  */
 const log = {
   /**
-   * Logs debug information (only in development)
+   * 输出调试信息
+   * @param args - 要记录的参数列表
    */
   debug: (...args: unknown[]): void => {
     console.log("[MMarked Debug]", ...args);
   },
 
   /**
-   * Logs errors with formatted output
+   * 输出错误信息
+   * @param msg - 错误描述
+   * @param error - 错误对象
    */
   error: (msg: string, error: unknown): void => {
     console.error("[MMarked Error]", msg, formatError(error));
@@ -239,31 +197,19 @@ const log = {
 };
 
 /* ============================================================================
- * Rendering Pipeline
+ * Markdown 内容处理 (Content Processing)
  * ========================================================================= */
 
 /**
- * Reusable DOMParser instance for better performance
- * Creating a new parser for each operation is expensive
- */
-const domParser = new DOMParser();
-
-/**
- * Cache for rendered content to avoid re-rendering
- * Key: MD5 hash of markdown content
- * Value: Rendered HTML string
- */
-const renderCache = new Map<string, string>();
-
-/**
- * Extracts markdown content from a Logseq source block
+ * 从 Logseq 源码块中提取 Markdown 内容
  *
- * @param content - Full block content including markers
- * @returns Extracted markdown content (trimmed)
+ * @param content - 包含标记的完整块内容
+ * @returns 提取并修剪后的 Markdown 内容
  */
 const extractMarkdownContent = (content: string): string => {
   log.debug("Extracting content from:", content);
 
+  // 匹配 #+BEGIN_SRC mmarked ... #+END_SRC 之间的内容
   const pattern = new RegExp(
     `#\\+BEGIN_SRC ${PLUGIN_NAME}([\\s\\S]*?)#\\+END_SRC`,
     "gm"
@@ -275,6 +221,7 @@ const extractMarkdownContent = (content: string): string => {
     return "";
   }
 
+  // 移除块标记，保留纯 Markdown 内容
   const extracted = match[0]
     .replace(`#+BEGIN_SRC ${PLUGIN_NAME}`, "")
     .replace("#+END_SRC", "")
@@ -284,217 +231,101 @@ const extractMarkdownContent = (content: string): string => {
   return extracted;
 };
 
+/* ============================================================================
+ * MathJax SVG 处理 (MathJax Processing)
+ * ========================================================================= */
+
 /**
- * Cleans up MathJax SVG containers and applies styling
+ * 清理和美化 MathJax SVG 容器
  *
- * This function:
- * 1. Finds all MathJax containers (mjx-container elements)
- * 2. Extracts SVG elements from containers
- * 3. Applies proper styling based on display mode (block/inline)
- * 4. Replaces containers with styled SVG elements
+ * 处理流程：
+ * 1. 查找所有 mjx-container 元素
+ * 2. 提取 SVG 元素并应用样式
+ * 3. 根据显示模式（块级/行内）设置样式
+ * 4. 替换原容器
  *
- * @param html - HTML string containing MathJax containers
- * @returns Cleaned HTML with properly styled SVG elements
+ * @param html - 包含 MathJax 容器的 HTML 字符串
+ * @returns 清理后的 HTML 字符串
  */
 const cleanupMathJaxSvg = (html: string): string => {
-  const doc = domParser.parseFromString(html, "text/html");
+  const parser = new DOMParser();
+  const doc = parser.parseFromString(html, "text/html");
   const containers = doc.querySelectorAll("mjx-container");
 
   containers.forEach((container) => {
     const svg = container.querySelector("svg");
     if (!svg) return;
 
-    // Extract container attributes
+    // 获取容器属性
     const display = container.getAttribute("display");
     const justify = container.getAttribute("justify");
 
-    // Add plugin-specific class for styling
+    // 添加插件特定的 CSS 类
     svg.classList.add(`${PLUGIN_NAME}-math`);
 
-    // Apply display mode styling
+    // 根据显示模式设置样式
     if (display === "true") {
-      // Block mode: centered with vertical spacing
+      // 块级模式：居中显示，带垂直间距
       svg.style.display = "block";
       svg.style.margin = "1em auto";
     } else {
-      // Inline mode: minimal spacing
+      // 行内模式：最小间距
       svg.style.display = "inline";
       svg.style.margin = "auto 0.25em";
     }
 
-    // Apply text alignment if specified
+    // 应用文本对齐方式
     if (justify) {
       svg.style.textAlign = justify;
     }
 
-    // Replace container with styled SVG
+    // 用处理后的 SVG 替换容器
     container.parentNode?.replaceChild(svg, container);
   });
 
   return doc.body.innerHTML;
 };
 
-/**
- * Generates a stable hash for rendered content
- * Falls back to UUID if hashing fails
- *
- * @param content - Content to hash
- * @returns Hash string (MD5 or UUID)
- */
-const generateHash = async (content: string): Promise<string> => {
-  try {
-    return generateMd5Hash(content);
-  } catch (error) {
-    log.error("Hash generation failed:", error);
-    return uuid(); // Fallback to UUID if crypto fails
-  }
-};
+/* ============================================================================
+ * Markdown 渲染 (Markdown Rendering)
+ * ========================================================================= */
 
 /**
- * Resolves local image paths to Logseq-compatible paths
+ * 渲染 Markdown 内容为 HTML
  *
- * This function processes all img tags in the HTML and converts relative paths
- * to absolute paths that Logseq can resolve. It handles:
- * - Relative paths (./image.png, ../assets/image.png)
- * - Asset paths (assets/image.png)
- * - Absolute local paths (/path/to/image.png)
- * - Leaves HTTP/HTTPS URLs unchanged
+ * 渲染流程：
+ * 1. 检查内容是否为空
+ * 2. 使用 renderMarkdown 转换 Markdown
+ * 3. 使用 tex2svg 处理数学公式
+ * 4. 清理 MathJax SVG 容器
+ * 5. 错误处理和降级方案
  *
- * @param html - HTML string containing img tags
- * @returns HTML with resolved image paths
+ * @param markdown - 要渲染的 Markdown 内容
+ * @returns 渲染后的 HTML 字符串
  */
-const resolveImagePaths = async (html: string): Promise<string> => {
-  try {
-    const doc = domParser.parseFromString(html, "text/html");
-    const images = doc.querySelectorAll("img");
-
-    if (images.length === 0) {
-      return html;
-    }
-
-    // Get current graph path from Logseq
-    const graphPath = await logseq.App.getCurrentGraph();
-    if (!graphPath?.path) {
-      log.debug("No graph path available, skipping image path resolution");
-      return html;
-    }
-
-    const basePath = graphPath.path;
-
-    images.forEach((img) => {
-      const src = img.getAttribute("src");
-      if (!src) return;
-
-      // Skip if already an HTTP/HTTPS URL
-      if (/^https?:\/\//i.test(src)) {
-        return;
-      }
-
-      // Skip data URLs
-      if (src.startsWith("data:")) {
-        return;
-      }
-
-      let resolvedPath: string;
-
-      // Handle different path formats
-      if (src.startsWith("/")) {
-        // Absolute path - use as is
-        resolvedPath = `file://${src}`;
-      } else if (src.startsWith("../assets/") || src.startsWith("assets/")) {
-        // Logseq assets path
-        const assetPath = src.replace(/^\.\.\//, "");
-        resolvedPath = `file://${basePath}/${assetPath}`;
-      } else if (src.startsWith("./")) {
-        // Relative path from current location
-        resolvedPath = `file://${basePath}/assets/${src.substring(2)}`;
-      } else {
-        // Assume it's in assets folder
-        resolvedPath = `file://${basePath}/assets/${src}`;
-      }
-
-      img.setAttribute("src", resolvedPath);
-      log.debug(`Resolved image path: ${src} -> ${resolvedPath}`);
-    });
-
-    return doc.body.innerHTML;
-  } catch (error) {
-    log.error("Image path resolution failed:", error);
-    // Return original HTML if resolution fails
-    return html;
-  }
-};
-
-/**
- * Main rendering function with caching and lazy loading
- *
- * Rendering pipeline:
- * 1. Check if content is empty
- * 2. Check cache for previously rendered content
- * 3. Lazy load markdown library if not loaded
- * 4. Render markdown with MathJax support
- * 5. Clean up SVG elements
- * 6. Resolve local image paths
- * 7. Cache result (with size limit)
- * 8. Return rendered HTML
- *
- * @param markdown - Markdown content to render
- * @returns Promise resolving to rendered HTML
- */
-const renderContent = async (markdown: string): Promise<string> => {
+const renderContent = (markdown: string): string => {
   try {
     log.debug("Rendering markdown:", markdown);
 
-    // Handle empty content
+    // 处理空内容
     if (!markdown.trim()) {
       return '<div class="empty-content">Empty content</div>';
     }
 
-    // Check cache first for performance
-    const cacheKey = generateMd5Hash(markdown);
-    if (renderCache.has(cacheKey)) {
-      log.debug("Cache hit for markdown");
-      return renderCache.get(cacheKey)!;
-    }
-
-    // Ensure library is loaded (lazy loading)
-    await loadMarkedLibrary();
-
-    if (!window.marked) {
-      throw new Error("Markdown library not available");
-    }
-
-    // Render with MathJax support
-    let result: string;
+    // 尝试完整渲染（包含数学公式）
     try {
-      const rendered = window.marked.renderMarkdown(markdown);
+      const rendered = renderMarkdown(markdown);
       log.debug("Markdown rendered:", rendered);
 
-      const svgContent = window.marked.tex2svg(rendered.parsed);
-      result = cleanupMathJaxSvg(svgContent);
+      const svgContent = tex2svg(rendered.parsed);
+      return cleanupMathJaxSvg(svgContent);
     } catch (error) {
       log.error("tex2svg rendering failed:", error);
 
-      // Fallback: basic markdown rendering without math
-      const rendered = window.marked.renderMarkdown(markdown);
-      result = rendered.parsed;
+      // 降级方案：仅渲染基础 Markdown（不含数学公式）
+      const rendered = renderMarkdown(markdown);
+      return rendered.parsed;
     }
-
-    // Resolve local image paths to Logseq-compatible paths
-    result = await resolveImagePaths(result);
-
-    // Cache the result
-    renderCache.set(cacheKey, result);
-
-    // Implement LRU-style cache eviction to prevent memory issues
-    if (renderCache.size > MAX_CACHE_SIZE) {
-      const firstKey = renderCache.keys().next().value;
-      if (firstKey) {
-        renderCache.delete(firstKey);
-      }
-    }
-
-    return result;
   } catch (error) {
     log.error("Markdown rendering failed:", error);
     const { message } = formatError(error);
@@ -503,26 +334,25 @@ const renderContent = async (markdown: string): Promise<string> => {
 };
 
 /* ============================================================================
- * Theme Management
+ * 主题管理 (Theme Management)
  * ========================================================================= */
 
 /**
- * Updates theme-specific CSS when Logseq theme changes
- *
- * This function:
- * 1. Detects current theme (light/dark)
- * 2. Loads appropriate mathcrowd CSS
- * 3. Provides style to Logseq
+ * 处理主题变更
+ * 根据 Logseq 当前主题加载对应的 MathCrowd CSS
  */
 const handleThemeChange = async (): Promise<void> => {
   try {
+    // 获取当前主题
     const theme = await logseq.App.getStateFromStore<"light" | "dark">(
       "ui/theme"
     );
 
+    // 选择对应的主题 CSS
     const mathcrowdCss =
       theme === "dark" ? MATHCROWD_CSS.dark : MATHCROWD_CSS.light;
 
+    // 应用主题样式
     logseq.provideStyle(`@import url("${mathcrowdCss}");`);
     log.debug("Theme changed:", theme);
   } catch (error) {
@@ -531,15 +361,16 @@ const handleThemeChange = async (): Promise<void> => {
 };
 
 /* ============================================================================
- * Plugin Commands & Handlers
+ * 斜杠命令 (Slash Command)
  * ========================================================================= */
 
 /**
- * Registers the slash command for creating MMarked blocks
+ * 注册斜杠命令
+ * 在 Logseq 中输入 /MMarked Block 时创建渲染器块和源码块
  *
- * Creates two blocks:
- * 1. Renderer block: {{renderer :mmarked-preview_<uuid>}}
- * 2. Source block: #+BEGIN_SRC mmarked ... #+END_SRC
+ * 块结构：
+ * - 父块：{{renderer :mmarked-preview_<uuid>}}
+ * - 子块：#+BEGIN_SRC mmarked ... #+END_SRC
  */
 const registerSlashCommand = async (): Promise<void> => {
   logseq.Editor.registerSlashCommand(COMMAND_NAME, async () => {
@@ -547,16 +378,16 @@ const registerSlashCommand = async (): Promise<void> => {
     const template = createRendererTemplate(rendererUuid);
 
     try {
-      // Insert renderer template at cursor
+      // 在光标位置插入渲染器模板
       await logseq.Editor.insertAtEditingCursor(template);
 
-      // Get current block for inserting child
+      // 获取当前块
       const currBlock = await logseq.Editor.getCurrentBlock();
       if (!currBlock) {
         throw new Error("No current block found");
       }
 
-      // Insert source block as child
+      // 插入源码块作为子块
       await logseq.Editor.insertBlock(currBlock.uuid, BLOCK_TEMPLATE, {
         sibling: false,
         before: false,
@@ -568,18 +399,22 @@ const registerSlashCommand = async (): Promise<void> => {
   });
 };
 
+/* ============================================================================
+ * 宏渲染器 (Macro Renderer)
+ * ========================================================================= */
+
 /**
- * Handles macro renderer events for MMarked blocks
+ * 处理宏渲染器事件
  *
- * Processing flow:
- * 1. Validate renderer type
- * 2. Fetch render block and its children
- * 3. Extract markdown from source block
- * 4. Render markdown to HTML
- * 5. Provide UI with rendered content
- * 6. Handle errors gracefully
+ * 处理流程：
+ * 1. 验证渲染器类型
+ * 2. 获取渲染块及其子块
+ * 3. 提取 Markdown 内容
+ * 4. 渲染为 HTML
+ * 5. 提供 UI 显示
+ * 6. 错误处理
  *
- * @param event - Render event from Logseq
+ * @param event - 来自 Logseq 的渲染事件
  */
 const handleMacroRenderer = async ({
   slot,
@@ -587,13 +422,13 @@ const handleMacroRenderer = async ({
 }: RenderEvent): Promise<void> => {
   const [type] = payload.arguments;
 
-  // Only handle our renderer types
+  // 只处理本插件的渲染器
   if (!type.startsWith(RENDERER_PREFIX)) return;
 
   try {
     log.debug("Handling macro renderer:", { slot, type });
 
-    // Fetch the renderer block with its children
+    // 获取渲染块（包含子块）
     const renderBlockId = payload.uuid;
     const renderBlock = await logseq.Editor.getBlock(renderBlockId, {
       includeChildren: true,
@@ -601,12 +436,12 @@ const handleMacroRenderer = async ({
 
     log.debug("Render block:", renderBlock);
 
-    // Validate block structure
+    // 验证块结构
     if (!renderBlock?.children?.[0]) {
       throw new Error("No content block found");
     }
 
-    // Fetch the source block containing markdown
+    // 获取包含 Markdown 的源码块
     const dataBlockId = (renderBlock.children[0] as BlockEntity).uuid;
     const dataBlock = await logseq.Editor.getBlock(dataBlockId);
 
@@ -616,18 +451,19 @@ const handleMacroRenderer = async ({
       throw new Error("No content found in data block");
     }
 
-    // Extract and render markdown
+    // 提取并渲染 Markdown
     const markdown = extractMarkdownContent(dataBlock.content);
     log.debug("Extracted markdown:", markdown);
 
-    const html = await renderContent(markdown);
+    const html = renderContent(markdown);
     log.debug("Rendered HTML:", html);
 
-    // Generate stable hash for UI key
+    // 生成稳定的 UI key
     const hash = await generateHash(html);
-    const layout = domParser.parseFromString(html, "text/html");
+    const parser = new DOMParser();
+    const layout = parser.parseFromString(html, "text/html");
 
-    // Provide rendered UI to Logseq
+    // 提供渲染后的 UI
     logseq.provideUI({
       key: `${PLUGIN_NAME}-preview_${hash}`,
       slot,
@@ -638,17 +474,12 @@ const handleMacroRenderer = async ({
         </div>
       `,
     });
-
-    // Update block to trigger re-render if needed
-    if (renderBlock.content) {
-      await logseq.Editor.updateBlock(renderBlockId, renderBlock.content);
-    }
   } catch (error) {
     log.error("Macro renderer failed:", error);
     const { message } = formatError(error);
     logseq.UI.showMsg(`Rendering failed: ${message}`, "error");
 
-    // Provide error UI
+    // 提供错误 UI
     logseq.provideUI({
       key: `${PLUGIN_NAME}-error_${uuid()}`,
       slot,
@@ -664,20 +495,22 @@ const handleMacroRenderer = async ({
 };
 
 /* ============================================================================
- * Plugin Initialization
+ * 插件初始化 (Plugin Initialization)
  * ========================================================================= */
 
 /**
- * Main plugin initialization function
+ * 主初始化函数
  *
- * Initialization steps:
- * 1. Provide static CSS styles (MathJax + plugin styles)
- * 2. Register event handlers (synchronous, lightweight)
- * 3. Load theme and register commands asynchronously (non-blocking)
+ * 初始化步骤：
+ * 1. 提供静态 CSS 样式
+ * 2. 初始化主题
+ * 3. 注册斜杠命令
+ * 4. 注册事件处理器
+ * 5. 显示初始化成功消息
  */
 async function main(): Promise<void> {
   try {
-    // Step 1: Provide all static styles at once (synchronous, fast)
+    // 提供所有静态样式
     logseq.provideStyle(`
       ${MATHJAX_STYLES}
       .${PLUGIN_NAME} {
@@ -687,19 +520,18 @@ async function main(): Promise<void> {
       }
     `);
 
-    // Step 2: Register event handlers immediately (synchronous, fast)
+    // 初始化主题
+    await handleThemeChange();
+
+    // 注册命令
+    await registerSlashCommand();
+
+    // 注册事件处理器
     logseq.App.onMacroRendererSlotted(handleMacroRenderer);
     logseq.App.onThemeModeChanged(handleThemeChange);
 
-    // Step 3: Initialize theme and register commands in parallel (non-blocking)
-    // These run asynchronously and won't block plugin ready signal
-    Promise.all([handleThemeChange(), registerSlashCommand()]).catch(
-      (error) => {
-        log.error("Async initialization failed:", error);
-      }
-    );
-
-    // Plugin is now ready - no blocking UI message
+    // 通知用户初始化成功
+    logseq.UI.showMsg(`${PLUGIN_NAME} plugin initialized`);
   } catch (error) {
     log.error("Plugin initialization failed:", error);
     const { message } = formatError(error);
@@ -708,12 +540,12 @@ async function main(): Promise<void> {
 }
 
 /* ============================================================================
- * Bootstrap
+ * 启动入口 (Bootstrap)
  * ========================================================================= */
 
 /**
- * Plugin bootstrap - entry point
- * Waits for Logseq to be ready before initializing
+ * 插件启动入口
+ * 等待 Logseq 准备就绪后执行主初始化函数
  */
 logseq.ready(main).catch((error) => {
   console.error("Plugin bootstrap failed:", formatError(error));

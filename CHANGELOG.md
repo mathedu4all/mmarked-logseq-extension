@@ -1,3 +1,12 @@
+## [1.5.1](https://cloud.mathcrowd.cn/agile/frontend/mmarked-logseq-extension/compare/v1.5.0...v1.5.1) (2025-10-03)
+
+
+### Bug Fixes
+
+* **ci:** sync to GitHub only on tag push to avoid duplicate runs ([1912d07](https://cloud.mathcrowd.cn/agile/frontend/mmarked-logseq-extension/commits/1912d07ae7c4ccff64ea341fe6b18196e68ebb60))
+
+
+
 # [1.5.0](https://cloud.mathcrowd.cn/agile/frontend/mmarked-logseq-extension/compare/v1.4.3...v1.5.0) (2025-10-03)
 
 

@@ -1,3 +1,12 @@
+## [1.5.8](https://cloud.mathcrowd.cn/agile/frontend/mmarked-logseq-extension/compare/v1.5.7...v1.5.8) (2025-10-03)
+
+
+### Bug Fixes
+
+* correct browser.umd.js path to relative from src directory ([6bc4b84](https://cloud.mathcrowd.cn/agile/frontend/mmarked-logseq-extension/commits/6bc4b84a4a8b2b54ddfc4b98310dc4b07db24abe))
+
+
+
 ## [1.5.7](https://cloud.mathcrowd.cn/agile/frontend/mmarked-logseq-extension/compare/v1.5.6...v1.5.7) (2025-10-03)
 
 

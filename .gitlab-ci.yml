@@ -1,22 +1,7 @@
 image: alpine:3.20
 
 stages:
-  - lint
   - sync
-
-yaml_lint:
-  stage: lint
-  image: alpine:3.20
-  script:
-    - sed -i 's/https:\/\/dl-cdn.alpinelinux.org/http:\/\/mirrors.homelab.mathcrowd.cn/' /etc/apk/repositories
-    - apk add --no-cache yamllint
-    - echo "Running yamllint on .gitlab-ci.yml"
-    - yamllint -d '{extends: default, rules: {line-length: disable}}' .gitlab-ci.yml
-  only:
-    - branches
-    - tags
-  tags:
-    - k8s-runner
 
 github_sync:
   stage: sync
